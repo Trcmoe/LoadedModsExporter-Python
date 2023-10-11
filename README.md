@@ -14,9 +14,12 @@
 将程序放置在`mods`文件夹下，程序会自动寻找`.jar`文件并读取其中存储模组信息的文件并汇总输出。
 
 Fabric版本
-
-```Python LME_for_Fabric.py```
+~~~
+Python LME_for_Fabric.py
+~~~
 
 Forge版本
 
-```Python LME_for_Forge.py```
+~~~
+Python LME_for_Forge.py
+~~~
