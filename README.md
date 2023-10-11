@@ -17,9 +17,3 @@ Fabric版本
 ~~~
 Python LME_for_Fabric.py
 ~~~
-
-Forge版本
-
-~~~
-Python LME_for_Forge.py
-~~~
