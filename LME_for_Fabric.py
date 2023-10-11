@@ -1,12 +1,15 @@
 import os
 import json
 import glob
+import time
 
 
 def folderDetect():  # 判断文件夹名
     current_dir = os.getcwd()
+    print(f"当前目录：{current_dir}")
     if os.path.basename(current_dir) != "mods":
         print("错误：该程序只能在“mods”文件夹下执行，请将程序移动至对应文件夹后重试。")
+        quit()
 
 
 def exportJars():
@@ -45,8 +48,10 @@ def formatJSON():
 
 def main():
     folderDetect()
+    print("正在输出，请不要关闭本窗口。")
     exportJars()
     formatJSON()
-
+    print("输出完毕，现在可关闭本窗口。")
+    time.sleep(10)
 
 main()
