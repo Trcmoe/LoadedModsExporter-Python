@@ -1,0 +1,12 @@
+# IDE
+.idea/
+.vscode/
+
+# test data
+test/
+lme_export.json
+
+# other
+.git/
+venv/
+env/
