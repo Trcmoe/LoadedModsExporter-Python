@@ -68,6 +68,8 @@ def JarFileHandler(folder_path):
             QuiltModHandler(folder_path)
         elif any('META-INF/mods.toml' in file.filename for file in z.infolist()):  # Forge/NeoForge Mod
             ForgeModHandler(folder_path)
+        elif any('META-INF/neoforge.mods.toml' in file.filename for file in z.infolist()):  # NeoForge Mod
+            NeoForgeModHandler(folder_path)
         else:  # 处理一些特殊的Mod
             SpecialHandler(folder_path)
 
@@ -116,6 +118,22 @@ def ForgeModHandler(folder_path):
     with zipfile.ZipFile(folder_path, 'r') as z:
         if 'META-INF/mods.toml' in z.namelist():
             with z.open('META-INF/mods.toml') as toml_file:
+                data = toml.loads(toml_file.read().decode('utf-8'))
+                mods = data.get('mods', [])
+                if mods:
+                    mod_info = mods[0]
+                    extracted_data = {
+                        'modid': mod_info.get('modId', ''),
+                        'name': mod_info.get('displayName', ''),
+                        'version': mod_info.get('version', '')
+                    }
+                    SaveData(extracted_data)
+
+
+def NeoForgeModHandler(folder_path):
+    with zipfile.ZipFile(folder_path, 'r') as z:
+        if 'META-INF/neoforge.mods.toml' in z.namelist():
+            with z.open('META-INF/neoforge.mods.toml') as toml_file:
                 data = toml.loads(toml_file.read().decode('utf-8'))
                 mods = data.get('mods', [])
                 if mods:
