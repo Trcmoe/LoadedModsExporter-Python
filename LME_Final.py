@@ -33,13 +33,8 @@ def PathHandler(folder_path):
             pass
 
 
-'''
-通用处理函数
-此函数可以处理LiteLoader模组、使用“mcmod.info”存储信息的Forge模组。
-'''
-
-
 def UniversalHandler(folder_path):
+    # 用于处理LiteLoader模组、使用“mcmod.info”存储信息的Forge模组
     with zipfile.ZipFile(folder_path, 'r') as z:
         if 'mcmod.info' in z.namelist():
             with z.open('mcmod.info') as info_file:
@@ -66,7 +61,7 @@ def JarFileHandler(folder_path):
             RiftModHandler(folder_path)
         elif 'quilt.mod.json' in z.namelist():  # Quilt Mod
             QuiltModHandler(folder_path)
-        elif any('META-INF/mods.toml' in file.filename for file in z.infolist()):  # Forge/NeoForge Mod
+        elif any('META-INF/mods.toml' in file.filename for file in z.infolist()):  # Forge Mod
             ForgeModHandler(folder_path)
         elif any('META-INF/neoforge.mods.toml' in file.filename for file in z.infolist()):  # NeoForge Mod
             NeoForgeModHandler(folder_path)
@@ -122,10 +117,20 @@ def ForgeModHandler(folder_path):
                 mods = data.get('mods', [])
                 if mods:
                     mod_info = mods[0]
+                    version = mod_info.get('version', '')
+                    # Workaround for "${file.jarVersion}" case
+                    if version == '${file.jarVersion}':
+                        if 'META-INF/MANIFEST.MF' in z.namelist():
+                            with z.open('META-INF/MANIFEST.MF') as manifest:
+                                for line in manifest:
+                                    line = line.decode('utf-8').strip()
+                                    if line.startswith('Implementation-Version:'):
+                                        version = line.split(':', 1)[1].strip()
+                                        break
                     extracted_data = {
                         'modid': mod_info.get('modId', ''),
                         'name': mod_info.get('displayName', ''),
-                        'version': mod_info.get('version', '')
+                        'version': version
                     }
                     SaveData(extracted_data)
 
