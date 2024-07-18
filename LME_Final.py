@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import toml
 import zipfile
@@ -34,7 +35,7 @@ def PathHandler(folder_path):
 
 
 def UniversalHandler(folder_path):
-    # 用于处理LiteLoader模组、使用“mcmod.info”存储信息的Forge模组
+    # 用于处理LiteLoader模组以及非常早期的Forge模组(MC1.6)
     with zipfile.ZipFile(folder_path, 'r') as z:
         if 'mcmod.info' in z.namelist():
             with z.open('mcmod.info') as info_file:
@@ -61,8 +62,10 @@ def JarFileHandler(folder_path):
             RiftModHandler(folder_path)
         elif 'quilt.mod.json' in z.namelist():  # Quilt Mod
             QuiltModHandler(folder_path)
-        elif any('META-INF/mods.toml' in file.filename for file in z.infolist()):  # Forge Mod
-            ForgeModHandler(folder_path)
+        elif 'mcmod.info' in z.namelist(): # Legacy Forge Mod(MC1.12.2)
+            LForgeModHandler(folder_path)
+        elif any('META-INF/mods.toml' in file.filename for file in z.infolist()):  # Modern Forge Mod
+            MForgeModHandler(folder_path)
         elif any('META-INF/neoforge.mods.toml' in file.filename for file in z.infolist()):  # NeoForge Mod
             NeoForgeModHandler(folder_path)
         else:  # 处理一些特殊的Mod
@@ -109,11 +112,35 @@ def QuiltModHandler(folder_path):
                 SaveData(extracted_data)
 
 
-def ForgeModHandler(folder_path):
+def LForgeModHandler(folder_path):
+    with zipfile.ZipFile(folder_path, 'r') as z:
+        if 'mcmod.info' in z.namelist():
+            with z.open('mcmod.info') as info_file:
+                raw_data = info_file.read().decode('utf-8')
+                cleaned_data = JSONClean(raw_data)
+                if cleaned_data is None:
+                    return
+                if isinstance(cleaned_data, list) and len(cleaned_data) > 0:
+                    mod_info = cleaned_data[0]
+                elif isinstance(cleaned_data, dict):
+                    mod_info = cleaned_data
+                else:
+                    print("mcmod.info 的数据结构不符合预期")
+                    return
+                extracted_data = {
+                    'modid': mod_info.get('modid', ''),
+                    'name': mod_info.get('name', ''),
+                    'version': mod_info.get('version', '')
+                }
+                SaveData(extracted_data)
+
+
+
+def MForgeModHandler(folder_path):
     with zipfile.ZipFile(folder_path, 'r') as z:
         if 'META-INF/mods.toml' in z.namelist():
             with z.open('META-INF/mods.toml') as toml_file:
-                data = toml.loads(toml_file.read().decode('utf-8'))
+                data = toml.loads(toml_file.read().decode('utf-8', errors='ignore'))
                 mods = data.get('mods', [])
                 if mods:
                     mod_info = mods[0]
@@ -139,7 +166,7 @@ def NeoForgeModHandler(folder_path):
     with zipfile.ZipFile(folder_path, 'r') as z:
         if 'META-INF/neoforge.mods.toml' in z.namelist():
             with z.open('META-INF/neoforge.mods.toml') as toml_file:
-                data = toml.loads(toml_file.read().decode('utf-8'))
+                data = toml.loads(toml_file.read().decode('utf-8', errors='ignore'))
                 mods = data.get('mods', [])
                 if mods:
                     mod_info = mods[0]
@@ -156,8 +183,22 @@ def SpecialHandler(folder_path):
     pass
 
 
+def JSONClean(json_string):
+    json_string = re.sub(r'[\x00-\x1F\x7F]', '', json_string)
+    try:
+        json_data = json.loads(json_string)
+        formatted_data = json.dumps(json_data, indent=4)
+        # print(f"Formatted JSON:\n{formatted_data}")
+        return json.loads(formatted_data)
+    except (TypeError, ValueError, json.JSONDecodeError) as e:
+        print(f"格式化 JSON 数据时出错: {e}")
+        return None
+
+
 def SaveData(data, filename="lme_export.json"):
     try:
+        if not data.get('modid') and not data.get('name'):  # 检查modid和name是否都为空
+            return
         if os.path.isfile(filename):  # 检查文件是否存在
             with open(filename, 'r', encoding='utf-8') as file:  # 读取现有数据
                 existing_data = json.load(file)
@@ -176,3 +217,4 @@ def SaveData(data, filename="lme_export.json"):
 if __name__ == "__main__":
     folder_path = GetPath()
     PathHandler(folder_path)
+    print("模组信息导出已完成。")
