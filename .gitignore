@@ -10,3 +10,5 @@ lme_export.json
 .git/
 venv/
 env/
+__pycache__/
+*.py[cod]
